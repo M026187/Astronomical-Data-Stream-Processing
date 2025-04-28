@@ -273,5 +273,10 @@ namespace Astronomical_Data_Stream_Processing
                 }
             }
         }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }
