@@ -6,15 +6,17 @@ using System.Drawing;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-// Frank Padovan, Astronomical Processing, Sprint 1
-// Date: 21/04/25
+// Frank Padovan, Astronomical Processing, Sprint 2
+// Date: 11/05/25
 // Astronomical Data Stream Processing
 // A forms based GUI application which displays recorded neutrino interactions per hour as an integer value for a 24 hour period.
 // Data is displayed in a list box and uses text boxes for user input and for displaying messages. Buttons are used for data processing.
 // Data processing includes the ability to load, view, sort, search and edit the neutrino interaction data set.
+// There are also math functions which can be performed on the neutrino interaction data, including Mid-Extreme, Mode, Average and Range.
 
 namespace Astronomical_Data_Stream_Processing
 {
@@ -27,181 +29,232 @@ namespace Astronomical_Data_Stream_Processing
 
         // Global variables
         static int arraySize = 24;
-        private int[] neutrinoInteractions = new int[arraySize];
-        int listBoxSelected;
-        bool allZero = true;
-        bool nothingSelected = true;
-        Random rand = new Random();
+        int[] neutrinoInteractions = new int[arraySize];
+        int listBoxSelection;
+        int target = 0;
+        int min = 0;
+        int max = arraySize - 1;
+        
+        // Method to handle Average button click
+        private void ButtonAverage_Click(object sender, EventArgs e)
+        {
+            // Check to see if data has been loaded
+            if (CheckIfEmpty() == false)
+            {
+                // Calculate the Average value of neutrinoInteractions data
+                MathAverage();
+            } 
+        }
+
+        // Method to handle Binary Search button click
+        private void ButtonBinarySearch_Click(object sender, EventArgs e)
+        {
+            // Clear the Message text box
+            TextBoxMessage.Clear();
+            // Check to see if data has been loaded
+            if (CheckIfEmpty())
+            {
+                // If empty then return
+                return;
+            }
+            // Check to see if the user input is acceptable
+            if (TestInput() == false)
+            {
+                // If user input is not acceptable then return
+                return;
+            }
+            // Perform Binary Search
+            List<int> result = SearchBinary(neutrinoInteractions, target);
+            // If the search target is found, display to the user in the Message text box
+            if (result.Count > 0)
+            {
+                TextBoxMessage.Text = target + " found at index " + string.Join(", ", result) + " using Binary Search";
+                // Clear the Input text box
+                TextBoxInput.Clear();
+                // Give focus to the Input text box
+                TextBoxInput.Focus();
+            }
+            // If the search target is not found, then display error to user
+            else
+            {
+                TextBoxMessage.Text = "ERROR:" + "\r\n" + "Search value does not exist.";
+                // Clear the Input text box
+                TextBoxInput.Clear();
+                // Give focus to the Input text box
+                TextBoxInput.Focus();
+            }
+        }
 
         // Method to deal with edit button being clicked
         private void ButtonEdit_Click(object sender, EventArgs e)
         {
-            // Clear the message text box
+            // Clear the Message text box
             TextBoxMessage.Clear();
             // Check to see if the neutrino data has been loaded
-            CheckIfEmpty();
-            // If the data is empty prompt user to load data first
-            if (allZero == true)
+            if (CheckIfEmpty())
             {
-                TextBoxMessage.Text = "ERROR:" + "\r\n" + "No data loaded" + "\r\n\r\n" + "Load data to edit";
+                // If neutrino data has not been loaded then return
                 return;
             }
             // Check if a value has been selected in the list box
-            ListBoxSelection();
-            if (nothingSelected == false)
+            if (ListBoxSelection())
             {
-                // Check to see if data entered into input text box is valid
+                // Check to see if data entered into Input text box is valid
                 try
                 {
-                    neutrinoInteractions[listBoxSelected] = Convert.ToInt32(TextBoxInput.Text);
+                    // Convert the user input value to an integer and copy it to the neutrinoInteractions array
+                    neutrinoInteractions[listBoxSelection] = Convert.ToInt32(TextBoxInput.Text);
                     // Inform the user which index has been edited
-                    TextBoxMessage.Text = "Value edited at index: " + listBoxSelected + "\r\n";
+                    TextBoxMessage.Text = "Value edited at index: " + listBoxSelection + "\r\n";
                 }
-                // If it's not valid, display error to user
+                // If it's not valid, then display error to user
                 catch
                 {
                     TextBoxMessage.Text = "ERROR:" + "\r\n" + "No valid input data" + "\r\n\r\n" + "Enter integer value into input";
                 }
                 // Display the edited value in the list box
-                DisplayData();   
+                DisplayData();
             }
             // If a value hasn't been selected in the list box, display error to user
-            else if (nothingSelected == true)
+            else if (ListBoxSelection() == false)
             {
                 TextBoxMessage.Text = "ERROR:" + "\r\n" + "Value to edit not selected" + "\r\n\r\n" + "Select value to edit";
             }
             // Clear user selection in list box
             ListBoxData.ClearSelected();
-            nothingSelected = true;
         }
-        // Method to handle load data button click
+
+        // Method to handle Load Data button click
         private void ButtonLoadData_Click(object sender, EventArgs e)
         {
             // Clear message display
             TextBoxMessage.Clear();
             // Load data into neutrinoInteractions array
             FillArray();
+            // Inform the user that the data is loaded
+            TextBoxMessage.Text = "Neutrino Data loaded";
         }
-        // Method to handle search button click
-        private void ButtonSearch_Click(object sender, EventArgs e)
+
+        // Method to handle Mid-Extreme button click
+        private void ButtonMidExtreme_Click(object sender, EventArgs e)
         {
-            // Clear message display
+            // Check to see if data has been loaded
+            if (CheckIfEmpty() == false)
+            {
+                // Sort data
+                BubbleSort();
+                // Calculate the Mid-Extreme value
+                MathMidExtreme();
+            }
+        }
+
+        // Method to handle Mode button click
+        private void ButtonMode_Click(object sender, EventArgs e)
+        {
+            // Check to see if data has been loaded
+            if (CheckIfEmpty() == false)
+            {
+                // Calculate the Mode and return as a list called modes
+                List<int> modes = MathMode(neutrinoInteractions);
+                // Clear the Message text box
+                TextBoxMessage.Clear();
+                // Display the contents of the list modes to the Message text box
+                TextBoxMessage.Text = "Mode: " + string.Join(", ", modes);
+            }
+        }
+
+        // Method to handle Range button click
+        private void ButtonRange_Click(object sender, EventArgs e)
+        {
+            // Check to see if data has been loaded
+            if (CheckIfEmpty() == false)
+            {
+                // Sort neutrinoInteractions data
+                BubbleSort();
+                // Calculate the Range of neutrinoInteractions data
+                MathRange();
+            }  
+        }
+
+        // Method to handle Sequential Search button click
+        private void ButtonSequentialSearch_Click(object sender, EventArgs e)
+        {
+            // Clear Message text box
             TextBoxMessage.Clear();
             // Check to see if data has been loaded
-            CheckIfEmpty();
-            // If data has not been loaded, display error to user
-            if (allZero == true)
+            if (CheckIfEmpty())
             {
-                TextBoxMessage.Text = "ERROR:" + "\r\n" + "No data loaded" + "\r\n\r\n" + "Load data to search";
+                // If data has not been loaded, then return
                 return;
             }
-            // Perform binary search
-            BinarySearch();
+            // Check to see if the user input is acceptable
+            if (TestInput() == false)
+            {
+                // If the user input is not acceptable then return
+                return;
+            }
+            // Perform Sequential Search
+            List<int> searchSeqResult = SearchSequential(neutrinoInteractions, target);
+
+            // Check to see if the search found any matches
+            if (searchSeqResult.Count > 0)
+            {
+                // Display to the user that the search value has been found and at the index it was found
+                TextBoxMessage.Text = target + " found at index " + string.Join(", ", searchSeqResult) + " using Sequential Search";
+                // Clear the Input text box
+                TextBoxInput.Clear();
+                // Give focus to the Input text box
+                TextBoxInput.Focus();
+            }
+            // If the search target is not found, then display error to user
+            else
+            {
+                TextBoxMessage.Text = "ERROR:" + "\r\n" + "Search value does not exist.";
+                // Clear the Input text box
+                TextBoxInput.Clear();
+                // Give focus to the Input text box
+                TextBoxInput.Focus();
+            }
         }
-        // Method to handle sort button click
+
+        // Method to handle Sort button click
         private void ButtonSort_Click(object sender, EventArgs e)
         {
-            // Clear message display
+            // Clear the Message text box
             TextBoxMessage.Clear();
             // Check to see if data has been loaded
-            CheckIfEmpty();
-            // If data has not been loaded, display error to user
-            if (allZero == true)
+            if (CheckIfEmpty())
             {
-                TextBoxMessage.Text = "ERROR:" + "\r\n" + "No data loaded" + "\r\n\r\n" + "Load data to sort";
                 return;
             }
-            // Perform bubble sort 
+            // Perform Bubble Sort 
             BubbleSort();
             // Display sorted values in the list box
             DisplayData();
+            // Inform user that the data is sorted
+            TextBoxMessage.Text = "Neutrino Data sorted";
         }
 
-        private void ListBoxData_SelectedIndexChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void TextBoxInput_TextChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void TextBoxMessage_TextChanged(object sender, EventArgs e)
-        {
-        
-        }
-        // Method to search the data stored in neutrinoInteractions using binary search
-        private void BinarySearch()
-        {
-            // Initialise variables
-            int min = 0;
-            int max = arraySize - 1;
-            int target;
-            // Check to makes sure user has input an integer value into the input text box
-            try
-            {
-                target = Convert.ToInt32(TextBoxInput.Text);
-            }
-            // If the user has not input an integer value into the input text box, display error in message box
-            catch
-            {
-                TextBoxMessage.Text = "ERROR:" + "\r\n" + "No input data to search for" + "\r\n\r\n" + "Enter an integer value to search";
-                return;
-            }
-                     
-            while (min <= max)
-            {
-                // Calculate the middle value of the neutrinoInteractions array
-                int mid = (min + max) / 2;
-                // Check to see if the search target matches the middle value of the neutrinoInteractions array
-                if (target == neutrinoInteractions[mid])
-                {
-                    // If it matches then display to user that the search value has been found
-                    TextBoxMessage.Text = target + " Found at index " + mid + "\r\n";
-                    // Clear the input text box
-                    TextBoxInput.Clear();
-                    return;
-                }
-                // If the search target is less than the middle value then adjust the max value to be the previously calculated middle value - 1
-                else if (target < neutrinoInteractions[mid])
-                {
-                    max = mid - 1;
-                }
-                // If the search target is greater than the middle value then adjust the min value to be the previously calculated middle value + 1
-                else
-                {
-                    min = mid + 1;
-                }
-            }
-            // If the search target is not found, display error to user
-            TextBoxMessage.Text = "ERROR:" + "\r\n" + "Search value does not exist.";
-            // Clear the input text box
-            TextBoxInput.Clear();
-            // Give focus to the input text box
-            TextBoxInput.Focus();
-        }
-        // Method to sort the data stored in neutrinoInteractions using bubble sort
+        // Method to sort the data stored in neutrinoInteractions array using Bubble Sort
         private void BubbleSort()
         {
             // Initialise variables
             bool swapped;
             int temp;
-
-            // do until swapped is true
+            // do until no more swaps have taken place
             do
             {
                 swapped = false;
                 // For all elements of the neutrinoInteractions array
-                for (int k = 0; k < arraySize - 1; k++)
+                for (int i = 0; i < arraySize - 1; i++)
                 {
-                    // Check to see if element k is less than element k+1
-                    if (neutrinoInteractions[k] > neutrinoInteractions[k + 1])
+                    // Check to see if element i is less than element i+1
+                    if (neutrinoInteractions[i] > neutrinoInteractions[i + 1])
                     {
-                        // Swap element k with element k+1
-                        temp = neutrinoInteractions[k];
-                        neutrinoInteractions[k] = neutrinoInteractions[k + 1];
-                        neutrinoInteractions[k + 1] = temp;
+                        // Swap element i with element i+1
+                        temp = neutrinoInteractions[i];
+                        neutrinoInteractions[i] = neutrinoInteractions[i + 1];
+                        neutrinoInteractions[i + 1] = temp;
                         // Flag swapped
                         swapped = true;
                     }
@@ -209,12 +262,15 @@ namespace Astronomical_Data_Stream_Processing
             }
             while (swapped == true);
         }
+
         // Method to check if the neutrinoInteractions array has been populated with neutrino interaction values
-        private void CheckIfEmpty()
+        private bool CheckIfEmpty()
         {
+            // Initalise variables
+            bool allZero = true;
             // Check each element in array
             foreach (int value in neutrinoInteractions)
-            {   
+            {
                 // Is the element non-zero
                 if (value != 0)
                 {
@@ -223,8 +279,17 @@ namespace Astronomical_Data_Stream_Processing
                     break;
                 }
             }
+            // If the data is empty prompt user to load data first
+            if (allZero == true)
+            {
+                // Display ERROR to user in the Message text box
+                TextBoxMessage.Text = "ERROR:" + "\r\n" + "No data loaded" + "\r\n\r\n" + "Load data to edit";
+            }
+            // Return the result of checking the neutrinoInteractions array to see if it has been populated
+            return allZero;
         }
-        // Method to display the contents of neutrinoInteractions in the list box
+
+        // Method to display the contents of neutrinoInteractions array in the list box
         private void DisplayData()
         {
             // Clear list box
@@ -232,51 +297,230 @@ namespace Astronomical_Data_Stream_Processing
             // Display each element of neutrinoInteractions
             for (int x = 0; x < arraySize; x++)
             {
+                // Display the value of neutrinoInteractions at the current index in the List Box
                 ListBoxData.Items.Add(" " + neutrinoInteractions[x]);
             }
         }
+
         // Method to fill the neutrinoInteractions array with random values from 10 to 90
         private void FillArray()
         {
+            // Create a new instance of the Random class used to generate pseudo-random numbers
+            Random rand = new Random();
+            // Fill the array with random numbers between 10 and 90
             for (int x = 0; x < arraySize; x++)
             {
-                for (int y = 0; y < arraySize;  y++)
-                {
-                    int randomInteger = rand.Next(10, 90);
-                    // Check to see if new random number is a duplicate. If it is then regenerate, otherwise store in neutrinoInteractions
-                    if (neutrinoInteractions.Contains(randomInteger))
-                    {
-                        y--;
-                    }
-                    else
-                    {
-                        neutrinoInteractions[y] = randomInteger;
-                    }
-                }
+                // Generate a random number between 10 and 90
+                int randomInteger = rand.Next(10, 90);
+                // Store the random number at the current index
+                neutrinoInteractions[x] = randomInteger;
             }
             // Display contents of neutrinoInteractions in the list box
             DisplayData();
         }
+
         // Method to check if a list box element has been selected
-        private void ListBoxSelection()
+        private bool ListBoxSelection()
         {
-            // Check the entire array to see if any items have been selected
+            // Initialise variables
+            bool listBoxSelected = false;
+            // Check the entire list box to see if any element has been selected
             for (int x = 0; x < arraySize; x++)
             {   
-                // Check which array elemnent has been selected
+                // Check which list box element has been selected
                 if (ListBoxData.GetSelected(x))
                 {
                     // Record the index value that has been selected
-                    listBoxSelected = x;
-                    // As something has been selected, nothingSelected becomes false
-                    nothingSelected = false;
+                    listBoxSelection = x;
+                    // As something has been selected, listBoxSelected becomes true
+                    listBoxSelected = true;
                 }
             }
+            // Return the result of checking if an element has been selected
+            return listBoxSelected;
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        // Method to calculate the average of the neutrinoInteractions array
+        private void MathAverage()
         {
+            // Initialise variables
+            int total = 0;
+            double average;
+            // Add all values in neutrinoInteractions
+            foreach (int value in neutrinoInteractions)
+            {
+                total = total + value;
+            }
+            // Average by dividing the total by the number of array elements
+            average = total / arraySize;
+            // Display the Average to the Message text box
+            TextBoxMessage.Text = "Average: " + average.ToString("0.00");
+        }
 
+        // Method to find the Mid-Extreme of the neutrinoInteractions array
+        private void MathMidExtreme()
+        {
+            // Calculate the Mid-Extreme value
+            double midExtreme = (neutrinoInteractions[max] + neutrinoInteractions[min]) / 2;
+            // Display the Mid-Extreme value to the Message text box
+            TextBoxMessage.Text = "Mid-Extreme: " + midExtreme.ToString("0.00");
+        }
+
+        // Method to find the Mode of the neutrinoInteractions array
+        private List<int> MathMode(int[] arrayMode)
+        {
+            // Initialise Variables
+            int arrayModeLength = arrayMode.Length;
+            int maxCount = 0;
+            // Create a list to store all mode values
+            List<int> modes = new List<int>();
+
+            // Count the instances of each element
+            for (int i = 0; i < arrayModeLength; i++)
+            {
+                int count = 0;
+
+                // Compare each element with all other elements to find how many times it appears
+                for (int j = 0; j < arrayModeLength; j++)
+                {
+                    if (arrayMode[i] == arrayMode[j])
+                    {
+                        // If an instance of the element is found keep track of the count
+                        count++;
+                    }
+                }
+
+                // If the count is greater than the current max then update
+                if (count > maxCount)
+                {
+                    // Update the maxCount with the new max value
+                    maxCount = count;
+                    // Clear previous values
+                    modes.Clear();
+                    // Add the new mode to the mode value list
+                    modes.Add(arrayMode[i]);
+                }
+                // If the count is equal to the current max count then check if mode value exists in the list. If not then add it to the mode value list
+                else if (count == maxCount && !modes.Contains(arrayMode[i]))
+                {
+                    // Add the additional mode to the mode value list
+                    modes.Add(arrayMode[i]);   
+                }
+            }
+            // Return the result of the modes found
+            return modes;
+        }
+       
+        // Method to calculate the range of the neutrinoInteractions array
+        private void MathRange()
+        {
+            // Calculate the range of neutrinoInteractions data
+            double range = neutrinoInteractions[max] - neutrinoInteractions[min];
+            // Display the range to the Message text box
+            TextBoxMessage.Text = "Range: " + range.ToString("0.00");
+        }
+
+        // Method to search the data stored in neutrinoInteractions array using Binary Search
+        private List<int> SearchBinary(int[] searchBinArray, int target)
+        {
+            // Initialise variables
+            int min = 0;
+            int max = searchBinArray.Length - 1;
+            // Create a list to store search result indicies
+            List<int> searchBinIndices = new List<int>();
+
+            // Search until reaching either end of the array
+            while (min <= max)
+            {
+                // Calculate the mid value to search against
+                int mid = min + (max - min) / 2;
+
+                // Check to see if the mid value equals the search value
+                if (searchBinArray[mid] == target)
+                {
+                    // Search value has been found, check to see if there are further matches left and right of this instance
+                    int i = mid;
+                    // Search to the left until reaching the end
+                    while (i >= 0 && searchBinArray[i] == target)
+                    {
+                        // Add the found value indicies to search result list
+                        searchBinIndices.Add(i);
+                        i--;
+                    }
+                    // Search to the right until reaching the end
+                    i = mid + 1;
+                    while (i < searchBinArray.Length && searchBinArray[i] == target)
+                    {
+                        // Add the found value indicies to search result list
+                        searchBinIndices.Add(i);
+                        i++;
+                    }
+                    break;
+                }
+                // If the mid value is less than the search value, then continue to search to the right of the array
+                else if (searchBinArray[mid] < target)
+                {
+                    min = mid + 1;
+                }
+                // If the mid value is more than the search value, then continue to search to the left of the array
+                else
+                {
+                    max = mid - 1;
+                }
+            }
+            // Sort the found indicies
+            searchBinIndices.Sort();
+            // Return the search results
+            return searchBinIndices;
+        }
+
+        // Method to search the data stored in the neutrinoInteractions array using Sequential Search
+        private List<int> SearchSequential(int[] searchSeqArray, int target)
+        {
+            // Initialise variables
+            int max = searchSeqArray.Length -1;
+            // Create a new list to store the search result indicies
+            List<int> searchSeqIndicies = new List<int>();
+            
+            // Compare the user input value with each element of neutrinoInteractions
+            for (int i = 0; i <= max; i++)
+            {
+                // Check to see if the user input value is equal to the element of the array
+                if (target == searchSeqArray[i])
+                {
+                    // if the user input value is found, then add the index where it was found to the search result list
+                    searchSeqIndicies.Add(i);
+                }
+            }
+            // Return the list of indexes that the user value was found at
+            return searchSeqIndicies;  
+        }
+
+        // Method to test if the user input is an integer value
+        private bool TestInput()
+        {
+            // Initialise variables
+            bool testTarget = false;
+            // Check to makes sure user has input an integer value into the Input text box
+            try
+            {
+                // Convert user input to integer
+                target = Convert.ToInt32(TextBoxInput.Text);
+                // Conversion is successful
+                testTarget = true;
+                // Return conversion result
+                return testTarget;
+            }
+            // If the user has not input an integer value into the Input text box, then display error in Message text box
+            catch
+            {
+                // Display ERROR to user in the Message text box
+                TextBoxMessage.Text = "ERROR:" + "\r\n" + "No input data to search for" + "\r\n\r\n" + "Enter an integer value to search";
+                // Conversion is not successful
+                testTarget = false;
+                // Return conversion result
+                return testTarget;
+            }
         }
     }
 }
