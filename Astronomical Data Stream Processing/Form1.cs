@@ -1,4 +1,13 @@
-﻿using System;
+﻿// Frank Padovan, Astronomical Processing, Sprint 2
+// Date: 11/05/25
+// Version: 2.0
+// Astronomical Data Stream Processing
+// A forms based GUI application which displays recorded neutrino interactions per hour as an integer value for a 24 hour period.
+// Data is displayed in a list box and uses text boxes for user input and for displaying messages. Buttons are used for data processing.
+// Data processing includes the ability to load, view, sort, search and edit the neutrino interaction data set.
+// There are also math functions which can be performed on the neutrino interaction data, including Mid-Extreme, Mode, Average and Range.
+
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -9,14 +18,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-
-// Frank Padovan, Astronomical Processing, Sprint 2
-// Date: 11/05/25
-// Astronomical Data Stream Processing
-// A forms based GUI application which displays recorded neutrino interactions per hour as an integer value for a 24 hour period.
-// Data is displayed in a list box and uses text boxes for user input and for displaying messages. Buttons are used for data processing.
-// Data processing includes the ability to load, view, sort, search and edit the neutrino interaction data set.
-// There are also math functions which can be performed on the neutrino interaction data, including Mid-Extreme, Mode, Average and Range.
 
 namespace Astronomical_Data_Stream_Processing
 {
@@ -34,7 +35,9 @@ namespace Astronomical_Data_Stream_Processing
         int target = 0;
         int min = 0;
         int max = arraySize - 1;
+        int maxCount;
         
+        #region Average button click
         // Method to handle Average button click
         private void ButtonAverage_Click(object sender, EventArgs e)
         {
@@ -45,7 +48,8 @@ namespace Astronomical_Data_Stream_Processing
                 MathAverage();
             } 
         }
-
+        #endregion
+        #region Binary Search button click
         // Method to handle Binary Search button click
         private void ButtonBinarySearch_Click(object sender, EventArgs e)
         {
@@ -84,7 +88,8 @@ namespace Astronomical_Data_Stream_Processing
                 TextBoxInput.Focus();
             }
         }
-
+        #endregion
+        #region Edit button click
         // Method to deal with edit button being clicked
         private void ButtonEdit_Click(object sender, EventArgs e)
         {
@@ -123,7 +128,8 @@ namespace Astronomical_Data_Stream_Processing
             // Clear user selection in list box
             ListBoxData.ClearSelected();
         }
-
+        #endregion
+        #region Load Data button click
         // Method to handle Load Data button click
         private void ButtonLoadData_Click(object sender, EventArgs e)
         {
@@ -134,7 +140,8 @@ namespace Astronomical_Data_Stream_Processing
             // Inform the user that the data is loaded
             TextBoxMessage.Text = "Neutrino Data loaded";
         }
-
+        #endregion
+        #region Mid-Extreme button click
         // Method to handle Mid-Extreme button click
         private void ButtonMidExtreme_Click(object sender, EventArgs e)
         {
@@ -147,7 +154,8 @@ namespace Astronomical_Data_Stream_Processing
                 MathMidExtreme();
             }
         }
-
+        #endregion
+        #region Mode button click
         // Method to handle Mode button click
         private void ButtonMode_Click(object sender, EventArgs e)
         {
@@ -159,10 +167,11 @@ namespace Astronomical_Data_Stream_Processing
                 // Clear the Message text box
                 TextBoxMessage.Clear();
                 // Display the contents of the list modes to the Message text box
-                TextBoxMessage.Text = "Mode: " + string.Join(", ", modes);
+                TextBoxMessage.Text = "Mode: " + string.Join(", ", modes) + "\r\n\r\n" + "Occurrence: " + maxCount;
             }
         }
-
+        #endregion
+        #region Range button click
         // Method to handle Range button click
         private void ButtonRange_Click(object sender, EventArgs e)
         {
@@ -175,7 +184,8 @@ namespace Astronomical_Data_Stream_Processing
                 MathRange();
             }  
         }
-
+        #endregion
+        #region Sequential Search button click
         // Method to handle Sequential Search button click
         private void ButtonSequentialSearch_Click(object sender, EventArgs e)
         {
@@ -216,7 +226,8 @@ namespace Astronomical_Data_Stream_Processing
                 TextBoxInput.Focus();
             }
         }
-
+        #endregion
+        #region Sort button click
         // Method to handle Sort button click
         private void ButtonSort_Click(object sender, EventArgs e)
         {
@@ -234,7 +245,8 @@ namespace Astronomical_Data_Stream_Processing
             // Inform user that the data is sorted
             TextBoxMessage.Text = "Neutrino Data sorted";
         }
-
+        #endregion
+        #region BubbleSort
         // Method to sort the data stored in neutrinoInteractions array using Bubble Sort
         private void BubbleSort()
         {
@@ -262,7 +274,8 @@ namespace Astronomical_Data_Stream_Processing
             }
             while (swapped == true);
         }
-
+        #endregion
+        #region CheckIfEmpty
         // Method to check if the neutrinoInteractions array has been populated with neutrino interaction values
         private bool CheckIfEmpty()
         {
@@ -283,12 +296,13 @@ namespace Astronomical_Data_Stream_Processing
             if (allZero == true)
             {
                 // Display ERROR to user in the Message text box
-                TextBoxMessage.Text = "ERROR:" + "\r\n" + "No data loaded" + "\r\n\r\n" + "Load data to edit";
+                TextBoxMessage.Text = "ERROR:" + "\r\n" + "No data loaded" + "\r\n\r\n" + "Load data to perform function";
             }
             // Return the result of checking the neutrinoInteractions array to see if it has been populated
             return allZero;
         }
-
+        #endregion
+        #region DisplayData
         // Method to display the contents of neutrinoInteractions array in the list box
         private void DisplayData()
         {
@@ -301,7 +315,8 @@ namespace Astronomical_Data_Stream_Processing
                 ListBoxData.Items.Add(" " + neutrinoInteractions[x]);
             }
         }
-
+        #endregion
+        #region FillArray
         // Method to fill the neutrinoInteractions array with random values from 10 to 90
         private void FillArray()
         {
@@ -318,7 +333,8 @@ namespace Astronomical_Data_Stream_Processing
             // Display contents of neutrinoInteractions in the list box
             DisplayData();
         }
-
+        #endregion
+        #region ListBoxSelection
         // Method to check if a list box element has been selected
         private bool ListBoxSelection()
         {
@@ -339,12 +355,13 @@ namespace Astronomical_Data_Stream_Processing
             // Return the result of checking if an element has been selected
             return listBoxSelected;
         }
-
+        #endregion
+        #region MathAverage
         // Method to calculate the average of the neutrinoInteractions array
         private void MathAverage()
         {
             // Initialise variables
-            int total = 0;
+            double total = 0;
             double average;
             // Add all values in neutrinoInteractions
             foreach (int value in neutrinoInteractions)
@@ -356,22 +373,24 @@ namespace Astronomical_Data_Stream_Processing
             // Display the Average to the Message text box
             TextBoxMessage.Text = "Average: " + average.ToString("0.00");
         }
-
+        #endregion
+        #region MathMidExtreme
         // Method to find the Mid-Extreme of the neutrinoInteractions array
         private void MathMidExtreme()
         {
             // Calculate the Mid-Extreme value
-            double midExtreme = (neutrinoInteractions[max] + neutrinoInteractions[min]) / 2;
+            double midExtreme = ((double)neutrinoInteractions[max] + (double)neutrinoInteractions[min]) / 2;
             // Display the Mid-Extreme value to the Message text box
             TextBoxMessage.Text = "Mid-Extreme: " + midExtreme.ToString("0.00");
         }
-
+        #endregion
+        #region MathMode
         // Method to find the Mode of the neutrinoInteractions array
         private List<int> MathMode(int[] arrayMode)
         {
             // Initialise Variables
             int arrayModeLength = arrayMode.Length;
-            int maxCount = 0;
+            maxCount = 0;
             // Create a list to store all mode values
             List<int> modes = new List<int>();
 
@@ -410,7 +429,8 @@ namespace Astronomical_Data_Stream_Processing
             // Return the result of the modes found
             return modes;
         }
-       
+        #endregion
+        #region MathRange
         // Method to calculate the range of the neutrinoInteractions array
         private void MathRange()
         {
@@ -419,7 +439,8 @@ namespace Astronomical_Data_Stream_Processing
             // Display the range to the Message text box
             TextBoxMessage.Text = "Range: " + range.ToString("0.00");
         }
-
+        #endregion
+        #region SearchBinary
         // Method to search the data stored in neutrinoInteractions array using Binary Search
         private List<int> SearchBinary(int[] searchBinArray, int target)
         {
@@ -473,7 +494,8 @@ namespace Astronomical_Data_Stream_Processing
             // Return the search results
             return searchBinIndices;
         }
-
+        #endregion
+        #region SearchSequential
         // Method to search the data stored in the neutrinoInteractions array using Sequential Search
         private List<int> SearchSequential(int[] searchSeqArray, int target)
         {
@@ -495,7 +517,8 @@ namespace Astronomical_Data_Stream_Processing
             // Return the list of indexes that the user value was found at
             return searchSeqIndicies;  
         }
-
+        #endregion
+        #region TestInput
         // Method to test if the user input is an integer value
         private bool TestInput()
         {
@@ -522,5 +545,6 @@ namespace Astronomical_Data_Stream_Processing
                 return testTarget;
             }
         }
+        #endregion
     }
 }
